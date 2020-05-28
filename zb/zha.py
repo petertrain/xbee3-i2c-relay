@@ -152,8 +152,10 @@ def deserialize_frame(cluster_id, data):
         else:
             schema = on_off_server_commands[command_id][1]  # Only on off switch commands are implemented
     elif frc.frame_type == FrameType.GLOBAL_COMMAND:
-        if command_id == 0x0:
+        if command_id == 0x0:       # Read attributes request
             schema = (t.List(t.uint16_t),)
+        elif command_id == 0x0b:    # default response to report attributes
+            schema = (t.uint8_t,)
         else:
             print('General command {:02X} is not implemented'.format(command_id))
             schema = ()
@@ -169,7 +171,7 @@ def deserialize_frame(cluster_id, data):
 
 def serialize_on_off_report(tsn, on):
     frc = FrameControl.general()
-
+    frc.disable_default_response = True
     attribute_id = t.uint16_t(0x000)  # on off attribute id
     attribute_type = t.uint8_t(0x10)  # boolean type id
     attribute_value = t.uint8_t(1 if on else 0)

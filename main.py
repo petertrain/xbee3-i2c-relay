@@ -7,14 +7,6 @@ import zb.zha as zha
 
 import struct
 
-
-def wait_join_network():
-    for cnt in range(5):  # wait for up to 0.5 seconds
-        if xbee.atcmd('AI') == 0:
-            return
-        time.sleep(0.1)
-
-
 print(" +-------------------------------------+")
 print(" |          i2crelay                   |")
 print(" +-------------------------------------+\n")
@@ -39,6 +31,7 @@ capability_flags = 0x8E
 reporting_tsn = 0
 
 heartbeat_timeout = 300000
+
 
 def print_message(message):
     print("Data received from {} >>".format(''.join('{:02x}'.format(x).upper() for x in message['sender_eui64'])))
@@ -88,7 +81,7 @@ def set_relays():
 
 def handle_zha_message(message):
     frc, tsn, command_id, args, data = zha.deserialize_frame(message['cluster'], message['payload'])
-    print(frc, tsn, command_id, args, data)
+    # print(frc, tsn, command_id, args, data)
     if message['cluster'] == 6:  # on off switch
         relay_id = message['dest_ep'] - 0xc0
         if frc.frame_type == zha.FrameType.CLUSTER_COMMAND:
@@ -109,6 +102,8 @@ def handle_zha_message(message):
                 xbee.transmit(message['sender_eui64'], response_frame,
                               source_ep=message['source_ep'], dest_ep=message['dest_ep'],
                               cluster=zdo.ZDOCmd.Simple_Desc_rsp, profile=message['profile'])
+            elif command_id == 0x0b:    # default response to report attributes
+                print('Attribute report resulted in response status {}'.format(args[1]))
 
 
 def publish_relay_state(relay_id):
@@ -141,7 +136,7 @@ while True:
         if ai != 0:
             print('handle message: Not associated to a PAN (current state is {}.  Cannot handle message'.format(ai))
         else:
-            print_message(received_msg)
+            # print_message(received_msg)
             if received_msg['profile'] == 0 and received_msg['dest_ep'] == 0:
                 handle_zdo_message(received_msg)
             elif received_msg['profile'] == 260:  # zha profile
